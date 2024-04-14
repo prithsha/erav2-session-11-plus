@@ -43,13 +43,25 @@ def init_params(net):
                 init.constant(m.bias, 0)
 
 
-# _, term_width = os.popen('stty size', 'r').read().split()
-# term_width = int(term_width)
 term_width = 160
+
+try:
+    output = os.popen('stty size', 'r').read().split()
+    if len(output) == 2:
+        _, term_width = output
+    else:
+        # Handle empty output case (e.g., print an error message or use a default value)
+        print("Failed to get terminal size using stty")
+except OSError:
+    # Handle potential OS errors
+    print("stty size command not supported")
+
+
 
 TOTAL_BAR_LENGTH = 65.
 last_time = time.time()
 begin_time = last_time
+
 def progress_bar(current, total, msg=None):
     global last_time, begin_time
     if current == 0:
@@ -124,3 +136,12 @@ def format_time(seconds):
     if f == '':
         f = '0ms'
     return f
+
+
+def get_true_and_false_indices(predictions : torch.Tensor, valid_labels):
+
+    comparison_result = predictions.argmax(dim=1).eq(valid_labels)
+    # Get the indices of True values
+    true_indices = torch.where(comparison_result)[0]
+    false_indices = torch.where(~comparison_result)[0]
+    return true_indices, false_indices

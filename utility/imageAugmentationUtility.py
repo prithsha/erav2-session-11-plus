@@ -41,7 +41,7 @@ def get_cifar10_train_and_test_transforms(image_set_mean :tuple, image_set_std :
     train_transforms_collection.extend(create_random_resize_crop_transformation( zoom_image_size = (40,40),
                                                                                 random_crop_size=(32,32),
                                                                                 final_image_size=(32,32)))
-    train_transforms_collection.append(create_coarse_drop_out_transformation(hole_size=(8,8), fill_value=image_mean))
+    train_transforms_collection.append(create_coarse_drop_out_transformation(hole_size=(16,16), fill_value=image_mean))
     train_transforms_collection.extend(create_basic_transforms_collection(mean=image_set_mean, std=image_set_std))
 
     train_transforms = compose_custom_transforms(train_transforms_collection)

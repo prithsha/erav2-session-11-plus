@@ -4,8 +4,10 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-
+from tqdm import tqdm
 from enum import Enum
+from collections import deque
+
 
 from torchsummary import summary
 import torchvision
@@ -15,7 +17,7 @@ import os
 import argparse
 
 from models import *
-from utility.utils import progress_bar
+from utility import utils
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
@@ -78,10 +80,11 @@ class ModelExecutor:
         self.train_accuracy = []
         self.test_accuracy = []        
 
-        self.correctly_predicted_trained_images = []
-        self.wrongly_predicted_trained_images = []
-        self.correctly_predicted_test_images = []
-        self.wrongly_predicted_test_images = []
+        # self.correctly_predicted_trained_images = deque(maxlen=ModelExecutor.MAX_IMAGES_FOR_DISPLAY)
+        self.wrongly_predicted_trained_images = deque(maxlen=ModelExecutor.MAX_IMAGES_FOR_DISPLAY)
+        # self.correctly_predicted_test_images = deque(maxlen=ModelExecutor.MAX_IMAGES_FOR_DISPLAY)
+        self.wrongly_predicted_test_images = deque(maxlen=ModelExecutor.MAX_IMAGES_FOR_DISPLAY)
+
 
     def train(self,epoch, model, optimizer:  optim.Optimizer, criterion):
         print('\nEpoch: %d' % epoch)
@@ -89,7 +92,11 @@ class ModelExecutor:
         train_loss = 0
         correct = 0
         total = 0
-        for batch_idx, (inputs, targets) in enumerate(self.train_loader):
+
+        tqdm_batches  = tqdm(enumerate(self.train_loader), desc="Train batches", total=len(self.train_loader))
+        for batch_idx, (inputs, targets) in tqdm_batches:
+
+        # for batch_idx, (inputs, targets) in enumerate(self.train_loader):
             inputs, targets = inputs.to(device), targets.to(device)
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -102,8 +109,15 @@ class ModelExecutor:
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
-            progress_bar(batch_idx, len(self.train_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                        % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+            argmax_data = outputs.argmax(dim=1)
+            _, false_indices = utils.get_true_and_false_indices(outputs, targets)
+            for image_index in false_indices:
+                    selected_image = inputs[image_index]
+                    self.wrongly_predicted_trained_images.appendleft((selected_image, argmax_data[image_index]))
+
+
+            progress_description = f"Train: {batch_idx, len(self.train_loader)} Loss: {train_loss/(batch_idx+1): 0.3f} | Acc: {100.*correct/total: 0.3f}%, {correct}, {total}"
+            tqdm_batches.set_description(desc = progress_description)
 
 
     def test(self, epoch, model,criterion):
@@ -113,7 +127,10 @@ class ModelExecutor:
         correct = 0
         total = 0
         with torch.no_grad():
-            for batch_idx, (inputs, targets) in enumerate(self.test_loader):
+
+            tqdm_batches  = tqdm(enumerate(self.test_loader), desc="Test batches", total=len(self.test_loader))
+            for batch_idx, (inputs, targets) in tqdm_batches:
+            # for batch_idx, (inputs, targets) in enumerate(self.test_loader):
                 inputs, targets = inputs.to(device), targets.to(device)
                 outputs = model(inputs)
                 loss = criterion(outputs, targets)
@@ -122,9 +139,15 @@ class ModelExecutor:
                 _, predicted = outputs.max(1)
                 total += targets.size(0)
                 correct += predicted.eq(targets).sum().item()
+                
+                argmax_data = outputs.argmax(dim=1)
+                _, false_indices = utils.get_true_and_false_indices(outputs, targets)
+                for image_index in false_indices:
+                        selected_image = inputs[image_index]
+                        self.wrongly_predicted_test_images.appendleft((selected_image, argmax_data[image_index]))
 
-                progress_bar(batch_idx, len(self.test_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                            % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+                progress_description = f"Test:  {batch_idx, len(self.test_loader)} Loss: {test_loss/(batch_idx+1): 0.3f} | Acc: {100.*correct/total: 0.3f}%, {correct}, {total}"
+                tqdm_batches.set_description(desc = progress_description)
 
         # Save checkpoint.
         acc = 100.*correct/total
@@ -139,6 +162,9 @@ class ModelExecutor:
                 os.mkdir('checkpoint')
             torch.save(state, './checkpoint/ckpt.pth')
             self.best_acc = acc
+
+
+
 
     def execute(self, epochs, model, criterion : nn.CrossEntropyLoss, optimizer :  optim.Optimizer, scheduler: optim.lr_scheduler.LRScheduler):
         for epoch in range(epochs):
