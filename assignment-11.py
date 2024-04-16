@@ -46,7 +46,7 @@ criterion = main.get_cross_entropy_loss_criteria()
 
 # %%
 EPOCHS = 2
-model_executor = main.ModelExecutor(train_loader, test_loader)
+model_executor = main.NetworkModelEvaluator(train_loader, test_loader)
 model_executor.execute(epochs=EPOCHS, model=model, criterion=criterion,
                        optimizer=optimizer, scheduler=scheduler)
 

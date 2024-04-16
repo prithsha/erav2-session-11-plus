@@ -6,11 +6,14 @@
 import os
 import sys
 import time
-import math
+import numpy as np
 
 import torch
 import torch.nn as nn
 import torch.nn.init as init
+import torch.optim as optim
+from torch.utils.data import DataLoader 
+from torch_lr_finder import LRFinder
 
 
 def get_mean_and_std(dataset):
@@ -137,7 +140,6 @@ def format_time(seconds):
         f = '0ms'
     return f
 
-
 def get_true_and_false_indices(predictions : torch.Tensor, valid_labels):
 
     comparison_result = predictions.argmax(dim=1).eq(valid_labels)
@@ -145,3 +147,29 @@ def get_true_and_false_indices(predictions : torch.Tensor, valid_labels):
     true_indices = torch.where(comparison_result)[0]
     false_indices = torch.where(~comparison_result)[0]
     return true_indices, false_indices
+
+def find_optimal_learning_rate(train_dataloader: DataLoader, model : nn.Module,  optimizer : optim.Optimizer, criterion, end_lr=10, num_iter=200):
+    lr_finder = LRFinder(model, optimizer, criterion, device="cuda")
+    lr_finder.range_test(train_dataloader, end_lr=end_lr, num_iter=num_iter, step_mode="exp")
+    lrs = lr_finder.history["lr"]
+    losses = lr_finder.history["loss"]
+    skip_start=10
+    skip_end=5
+    lrs = lrs[skip_start:-skip_end]
+    losses = losses[skip_start:-skip_end]
+    try:
+        min_grad_idx = (np.gradient(np.array(losses))).argmin()
+    except ValueError:
+        print("Failed to compute the gradients, there might not be enough points." )        
+
+    result = None
+    if min_grad_idx:
+        result =  lrs[min_grad_idx]
+
+    lr_finder.plot()
+    lr_finder.reset()
+    return result
+
+    
+
+
