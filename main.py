@@ -218,3 +218,7 @@ class NetworkModelEvaluator:
         axs[0, 1].set_title("Test Loss")
         axs[1, 1].plot(self.test_accuracy)
         axs[1, 1].set_title("Test Accuracy")
+
+
+
+
