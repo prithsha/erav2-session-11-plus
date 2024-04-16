@@ -119,8 +119,7 @@ class ModelExecutor:
             cur_time = time.time()
             total_time = cur_time - last_time
             step_time = cur_time - begin_time
-            progress_description = f"Train: {batch_idx, len(self.train_loader)} Loss: {train_loss/(batch_idx+1): 0.3f} | Acc: {100.*correct/total: 0.3f}%,\
-                                 {correct}, {total}, Total : Step time [{utils.format_time(total_time)} : {utils.format_time(step_time)}]"
+            progress_description = f"Train: {batch_idx, len(self.train_loader)} Loss: {train_loss/(batch_idx+1): 0.3f} | Acc: {100.*correct/total: 0.3f}%, {correct}, {total}, Total : Step time[{utils.format_time(total_time)} : {utils.format_time(step_time)}]"
             tqdm_batches.set_description(desc = progress_description)
 
 
@@ -156,8 +155,7 @@ class ModelExecutor:
                 cur_time = time.time()
                 total_time = cur_time - last_time
                 step_time = cur_time - begin_time                
-                progress_description = f"Test:  {batch_idx, len(self.test_loader)} Loss: {test_loss/(batch_idx+1): 0.3f} | Acc: {100.*correct/total: 0.3f}%, \
-                                        {correct}, {total}, Total : Step time [{utils.format_time(total_time)} : {utils.format_time(step_time)}]"                    
+                progress_description = f"Test:  {batch_idx, len(self.test_loader)} Loss: {test_loss/(batch_idx+1): 0.3f} | Acc: {100.*correct/total: 0.3f}%, {correct}, {total}, Total : Step time[{utils.format_time(total_time)} : {utils.format_time(step_time)}]"                    
                 tqdm_batches.set_description(desc = progress_description)
 
         # Save checkpoint.
@@ -178,7 +176,11 @@ class ModelExecutor:
 
 
     def execute(self, epochs, model, criterion : nn.CrossEntropyLoss, optimizer :  optim.Optimizer, scheduler: optim.lr_scheduler.LRScheduler):
+        start_time = time.time()
         for epoch in range(epochs):
             self.train(epoch, model, optimizer, criterion)
             self.test(epoch, model, criterion)
             scheduler.step()
+        end_time = time.time()
+        
+        print(f"Finished! Total execution time: {utils.format_time(end_time-start_time)}")
