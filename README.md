@@ -1,24 +1,34 @@
-# Train CIFAR10 with PyTorch
+# Folder structure
 
-I'm playing with [PyTorch](http://pytorch.org/) on the CIFAR10 dataset.
+### main.py:
 
-## Prerequisites
-- Python 3.6+
-- PyTorch 1.0+
+Have function to get
 
-## Training
-```
-# Start training with: 
-python main.py
+    - model instance
+    - optimizers
+    - schedulers
+    - Class NetworkModelEvaluator, which have test and train method for network and also hold information like
+            - train losses
+            - test losses
+            - wrongly predicted test and train images. Maintain them in a queue of size 20
+            - Can display loss and accuracy charts
 
-# You can manually resume the training with: 
-python main.py --resume --lr=0.01
-```
 
-## Accuracy
-| Model             | Acc.        |
-| ----------------- | ----------- |
+### utility folder:
+    -   utils: Have basic utility functions like:
+            - Find optimal learning rate by LR finder
+            - time formatting 
+    -   imageAugmentationUtility: Helps in perfuming custom image augmentation
+    -   imageVisualizationUtility: Helps in visualizing images in matplotlib 
 
-| [ResNet18](https://arxiv.org/abs/1512.03385)          | 93.02%      |
+### models folder:
+    - Contain Resnet 18 and 34 models 
 
+
+### Jupyter execution file: assignment_11_gradcam_resnet18.ipynb
+
+Hold the code execution sequence.
+
+- Learning rate: 7.26E-02
+- Model max test accuracy: 79.998%
 
