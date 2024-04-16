@@ -39,16 +39,25 @@ train_loader, test_loader = cifar10Utility.get_dataloaders(train_dataset=train_d
 imageVisualizationUtility.randomly_show_images_from_tensor_array(train_dataset, cifar10Utility.get_image_classes(), fig_size=(16,4))
 
 # %%
+from utility import utils
 model = main.get_model_instance(model_type=main.ModelType.RESNET18)
-optimizer = main.get_adam_optimizer(model)
-scheduler = main.get_stepLR_scheduler(optimizer)
-criterion = main.get_cross_entropy_loss_criteria()
 
 # %%
-EPOCHS = 2
+EPOCHS = 20
+optimizer = main.get_adam_optimizer(model)
+criterion = main.get_cross_entropy_loss_criteria()
+optimal_learning_rate = utils.find_optimal_learning_rate(train_loader,model, optimizer, criterion)
+scheduler = main.get_one_cycle_lr_scheduler(optimizer, max_lr=optimal_learning_rate,
+                                            pct_start=5/EPOCHS, steps_per_epoch=len(train_loader), epochs=EPOCHS)
+
+# %%
+
 model_executor = main.NetworkModelEvaluator(train_loader, test_loader)
 model_executor.execute(epochs=EPOCHS, model=model, criterion=criterion,
                        optimizer=optimizer, scheduler=scheduler)
+
+# %%
+model_executor.show_train_and_test_accuracy_and_losses()
 
 # %%
 print(f"----****----Wrongly predicted test images: {len(model_executor.wrongly_predicted_test_images)}")
