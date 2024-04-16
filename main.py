@@ -7,7 +7,7 @@ import torch.backends.cudnn as cudnn
 from tqdm import tqdm
 from enum import Enum
 from collections import deque
-
+import time
 
 from torchsummary import summary
 import torchvision
@@ -92,10 +92,11 @@ class ModelExecutor:
         train_loss = 0
         correct = 0
         total = 0
-
+        last_time = time.time()
+        begin_time = last_time
         tqdm_batches  = tqdm(enumerate(self.train_loader), desc="Train batches", total=len(self.train_loader))
         for batch_idx, (inputs, targets) in tqdm_batches:
-
+            begin_time = time.time()
         # for batch_idx, (inputs, targets) in enumerate(self.train_loader):
             inputs, targets = inputs.to(device), targets.to(device)
             optimizer.zero_grad()
@@ -115,8 +116,11 @@ class ModelExecutor:
                     selected_image = inputs[image_index]
                     self.wrongly_predicted_trained_images.appendleft((selected_image, argmax_data[image_index]))
 
-
-            progress_description = f"Train: {batch_idx, len(self.train_loader)} Loss: {train_loss/(batch_idx+1): 0.3f} | Acc: {100.*correct/total: 0.3f}%, {correct}, {total}"
+            cur_time = time.time()
+            total_time = cur_time - last_time
+            step_time = cur_time - begin_time
+            progress_description = f"Train: {batch_idx, len(self.train_loader)} Loss: {train_loss/(batch_idx+1): 0.3f} | Acc: {100.*correct/total: 0.3f}%,\
+                                 {correct}, {total}, Total : Step time [{utils.format_time(total_time)} : {utils.format_time(step_time)}]"
             tqdm_batches.set_description(desc = progress_description)
 
 
@@ -128,9 +132,12 @@ class ModelExecutor:
         total = 0
         with torch.no_grad():
 
+            last_time = time.time()
+            begin_time = last_time
             tqdm_batches  = tqdm(enumerate(self.test_loader), desc="Test batches", total=len(self.test_loader))
             for batch_idx, (inputs, targets) in tqdm_batches:
             # for batch_idx, (inputs, targets) in enumerate(self.test_loader):
+                begin_time = time.time()
                 inputs, targets = inputs.to(device), targets.to(device)
                 outputs = model(inputs)
                 loss = criterion(outputs, targets)
@@ -145,8 +152,12 @@ class ModelExecutor:
                 for image_index in false_indices:
                         selected_image = inputs[image_index]
                         self.wrongly_predicted_test_images.appendleft((selected_image, argmax_data[image_index]))
-
-                progress_description = f"Test:  {batch_idx, len(self.test_loader)} Loss: {test_loss/(batch_idx+1): 0.3f} | Acc: {100.*correct/total: 0.3f}%, {correct}, {total}"
+          
+                cur_time = time.time()
+                total_time = cur_time - last_time
+                step_time = cur_time - begin_time                
+                progress_description = f"Test:  {batch_idx, len(self.test_loader)} Loss: {test_loss/(batch_idx+1): 0.3f} | Acc: {100.*correct/total: 0.3f}%, \
+                                        {correct}, {total}, Total : Step time [{utils.format_time(total_time)} : {utils.format_time(step_time)}]"                    
                 tqdm_batches.set_description(desc = progress_description)
 
         # Save checkpoint.
