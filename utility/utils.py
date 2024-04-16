@@ -148,7 +148,7 @@ def get_true_and_false_indices(predictions : torch.Tensor, valid_labels):
     false_indices = torch.where(~comparison_result)[0]
     return true_indices, false_indices
 
-def find_optimal_learning_rate(train_dataloader: DataLoader, model : nn.Module,  optimizer : optim.Optimizer, criterion, end_lr=10, num_iter=200):
+def find_optimal_learning_rate(train_dataloader: DataLoader, model : nn.Module,  optimizer : optim.Optimizer, criterion, end_lr=10, num_iter=200, show_plot = False):
     lr_finder = LRFinder(model, optimizer, criterion, device="cuda")
     lr_finder.range_test(train_dataloader, end_lr=end_lr, num_iter=num_iter, step_mode="exp")
     lrs = lr_finder.history["lr"]
@@ -166,7 +166,8 @@ def find_optimal_learning_rate(train_dataloader: DataLoader, model : nn.Module, 
     if min_grad_idx:
         result =  lrs[min_grad_idx]
 
-    lr_finder.plot()
+    if(show_plot):
+        lr_finder.plot()
     lr_finder.reset()
     return result
 
