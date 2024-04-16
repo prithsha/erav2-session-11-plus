@@ -6,3 +6,4 @@ matplotlib
 matplotlib-inline
 numpy
 tqdm
+torchsummary
